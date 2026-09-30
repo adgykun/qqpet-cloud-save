@@ -1,5 +1,4 @@
 // macOS: 全局 EPIPE 防护 — 必须在最前面
-// 原项目有几百个 console.log，管道断开时会 EPIPE 崩溃
 const _origLog = console.log;
 const _origErr = console.error;
 const _origWarn = console.warn;
@@ -13,8 +12,18 @@ process.on("uncaughtException", (err) => {
   if (err.code === "EPIPE" || err.message?.includes("EPIPE")) return;
 });
 
-const { app } = require("electron");
+const { app, ipcMain } = require("electron");
 const path = require("path");
+const cloudSync = require("./src/cloudSync");
+const { createSetupWindow } = require("./src/setupWindow");
+const { createSettingsWindow } = require("./src/settingsWindow");
+
+// 便携版路径处理：打包后重定向 userData 到 .exe 所在目录下的 userdata 文件夹
+if (app.isPackaged) {
+  const exeDir = path.dirname(process.execPath);
+  const customUserData = path.join(exeDir, "userdata");
+  app.setPath("userData", customUserData);
+}
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -68,10 +77,91 @@ const createWindow = async () => {
   }
 };
 
+// 注册 IPC 处理器
+ipcMain.handle("manual-sync", async () => {
+  return await cloudSync.uploadSave();
+});
+
+ipcMain.handle("get-sync-status", async () => {
+  const config = cloudSync.readConfig();
+  const userDataPath = cloudSync.getUserDataPath();
+  const fs = require("fs");
+  const saveFile = path.join(userDataPath, "config-macos.json");
+  let petName = "未知";
+  let petLevel = 1;
+  if (fs.existsSync(saveFile)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(saveFile, "utf-8"));
+      petName = parsed.pet?.info?.name || petName;
+      petLevel = parsed.pet?.maxInfo?.level || petLevel;
+    } catch (_) {}
+  }
+  return {
+    lastSyncTime: config.cloudSync?.lastSyncTime || null,
+    lastSyncDevice: config.cloudSync?.lastSyncDevice || null,
+    enabled: !!config.cloudSync?.githubToken,
+    petName,
+    petLevel
+  };
+});
+
+ipcMain.handle("open-settings", async () => {
+  createSettingsWindow();
+});
+
+// 每 5 分钟自动调用 uploadSave()
+setInterval(() => {
+  const config = cloudSync.readConfig();
+  if (config.cloudSync?.enabled && config.cloudSync?.githubToken) {
+    console.log("执行定时云端同步...");
+    cloudSync.uploadSave().catch((err) => {
+      console.error("定时云同步失败:", err.message);
+    });
+  }
+}, 5 * 60 * 1000);
+
+// 拦截退出：先执行 uploadSave()，带 5 秒超时保护
+let isQuitting = false;
+
+app.on("before-quit", async (e) => {
+  if (!isQuitting) {
+    isQuitting = true;
+    e.preventDefault();
+    console.log("正在准备退出，自动同步云存档...");
+    try {
+      const uploadPromise = cloudSync.uploadSave();
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve({ timeout: true }), 5000)
+      );
+      await Promise.race([uploadPromise, timeoutPromise]);
+    } catch (err) {
+      console.error("退出同步失败:", err.message);
+    }
+    app.quit();
+  }
+});
+
 // macOS: 不加载 PepFlash DLL（使用 Ruffle WASM 替代）
 app.commandLine.appendSwitch("disable-site-isolation-trials");
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 app.whenReady().then(() => {
-  createWindow();
+  const config = cloudSync.readConfig();
+  const token = config.cloudSync?.githubToken;
+
+  if (token) {
+    createWindow();
+    cloudSync.initSync().catch((err) => {
+      console.error("后台同步初始化失败:", err.message);
+    });
+  } else {
+    createSetupWindow((res) => {
+      createWindow();
+      if (res && res.action === "connect") {
+        cloudSync.initSync().catch((err) => {
+          console.error("后台同步初始化失败:", err.message);
+        });
+      }
+    });
+  }
 });
