@@ -133,7 +133,9 @@ const cloudSync = {
           const appData = app.getPath('appData');
           configCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config.json'));
           configCandidates.push(path.join(appData, 'pet', 'config.json'));
+          configCandidates.push(path.join(appData, 'qq-pet', 'config.json'));
           configCandidates.push(path.join(appData, 'qq-pet-macos', 'config.json'));
+          configCandidates.push(path.join(appData, 'QQ宠物', 'config.json'));
           configCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config.json'));
         } catch (_) {}
       }
@@ -164,7 +166,9 @@ const cloudSync = {
           const appData = app.getPath('appData');
           saveCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config-macos.json'));
           saveCandidates.push(path.join(appData, 'pet', 'config-macos.json'));
+          saveCandidates.push(path.join(appData, 'qq-pet', 'config-macos.json'));
           saveCandidates.push(path.join(appData, 'qq-pet-macos', 'config-macos.json'));
+          saveCandidates.push(path.join(appData, 'QQ宠物', 'config-macos.json'));
           saveCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config-macos.json'));
         } catch (_) {}
       }
@@ -314,7 +318,7 @@ const cloudSync = {
     const res = await axios.post(
       'https://api.github.com/gists',
       {
-        description: 'QQ宠物云存档 - 自动同步 - 请勿删除',
+        description: 'QQ宠物 - 自动同步 - 请勿删除',
         public: false,
         files: {
           'qqpet_save.json': {
@@ -342,7 +346,7 @@ const cloudSync = {
     const res = await axios.patch(
       `https://api.github.com/gists/${gistId}`,
       {
-        description: 'QQ宠物云存档 - 自动同步 - 请勿删除',
+        description: 'QQ宠物 - 自动同步 - 请勿删除',
         files: {
           'qqpet_save.json': {
             content: contentStr

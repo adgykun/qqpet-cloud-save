@@ -1,4 +1,4 @@
-# QQ 宠物管家 (WorkBuddy) - 云存档版
+# QQ 宠物管家 (WorkBuddy)
 
 QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同步项目（Windows），附带 OpenClaw Skill 实现宠物自动管理。
 （本项目基于qqpet_automation开发，增加了云端实时存档功能）
@@ -24,7 +24,7 @@ QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同�
 
 ### 1. 启动宠物与云端恢复
 
-从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载 Windows 平台的 Setup 安装包（`QQ宠物云存档版-Setup-x64.exe`）：
+从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载 Windows 平台的 Setup 安装包（`QQ宠物-Setup-x64.exe`）：
 
 #### 安装与启动步骤：
 1. 下载 Setup 安装包并双击进行安装（**建议选择非系统保护目录，如 D 盘**）。
