@@ -44,6 +44,22 @@ body {
   transition: all 0.08s !important;
   pointer-events: none !important;
 }
+
+ruffle-player #splash-screen,
+ruffle-player #unmute-overlay,
+ruffle-player .logo,
+ruffle-player #message-overlay,
+ruffle-player .loadbar,
+#splash-screen,
+#unmute-overlay,
+.logo,
+#message-overlay,
+.loadbar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 #move {
   pointer-events: auto !important;
 }

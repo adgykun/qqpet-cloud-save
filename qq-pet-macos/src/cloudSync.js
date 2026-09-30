@@ -20,31 +20,120 @@ function getApp() {
 
 const cloudSync = {
   /**
-   * 获取 userData 路径
+   * 获取便携版基础路径 (PORTABLE_EXECUTABLE_DIR 或 process.execPath 所在目录)
+   */
+  getBaseDir() {
+    return process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
+  },
+
+  /**
+   * 获取 userData 路径 (统一放在 baseDir/userdata 下)
    */
   getUserDataPath() {
     const app = getApp();
     if (app && typeof app.getPath === 'function') {
-      return app.getPath('userData');
+      try {
+        return app.getPath('userData');
+      } catch (_) {}
     }
-    return path.join(os.homedir(), '.qqpet_userdata');
+    const baseDir = cloudSync.getBaseDir();
+    return path.join(baseDir, 'userdata');
   },
 
   /**
-   * 获取配置文件路径 config.json
+   * 获取配置文件路径 config.json (位于 baseDir/config.json)
    */
   getConfigPath() {
-    const app = getApp();
-    if (app && app.isPackaged) {
-      return path.join(path.dirname(process.execPath), 'config.json');
+    const baseDir = cloudSync.getBaseDir();
+    return path.join(baseDir, 'config.json');
+  },
+
+  /**
+   * 记录同步日志到 sync_log.txt
+   */
+  logSync(msg) {
+    const userDataPath = cloudSync.getUserDataPath();
+    const logFile = path.join(userDataPath, 'sync_log.txt');
+    const line = `[${new Date().toISOString()}] ${msg}\n`;
+    try {
+      if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true });
+      }
+      fs.appendFileSync(logFile, line, 'utf-8');
+    } catch (_) {}
+  },
+
+  /**
+   * 自动迁移兼容旧位置 (如 %APPDATA% 或旧目录) 的 config.json 及存档文件
+   */
+  migrateOldData() {
+    const baseDir = cloudSync.getBaseDir();
+    const newConfigPath = cloudSync.getConfigPath();
+    const newUserDataPath = cloudSync.getUserDataPath();
+    const newSavePath = path.join(newUserDataPath, 'config-macos.json');
+
+    if (!fs.existsSync(newUserDataPath)) {
+      try {
+        fs.mkdirSync(newUserDataPath, { recursive: true });
+      } catch (_) {}
     }
-    const candidate1 = path.join(process.cwd(), 'config.json');
-    const candidate2 = path.join(__dirname, '..', 'config.json');
-    const candidate3 = path.join(__dirname, 'config.json');
-    if (fs.existsSync(candidate1)) return candidate1;
-    if (fs.existsSync(candidate2)) return candidate2;
-    if (fs.existsSync(candidate3)) return candidate3;
-    return candidate1;
+
+    if (!fs.existsSync(newConfigPath)) {
+      const configCandidates = [];
+      const app = getApp();
+      if (app && typeof app.getPath === 'function') {
+        try {
+          const appData = app.getPath('appData');
+          configCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config.json'));
+          configCandidates.push(path.join(appData, 'pet', 'config.json'));
+          configCandidates.push(path.join(appData, 'qq-pet-macos', 'config.json'));
+          configCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config.json'));
+        } catch (_) {}
+      }
+      configCandidates.push(path.join(process.cwd(), 'config.json'));
+      configCandidates.push(path.join(__dirname, '..', 'config.json'));
+      configCandidates.push(path.join(__dirname, 'config.json'));
+
+      for (const candidate of configCandidates) {
+        if (fs.existsSync(candidate) && candidate !== newConfigPath) {
+          try {
+            fs.copyFileSync(candidate, newConfigPath);
+            cloudSync.logSync(`[Migration] Migrated config.json from ${candidate}`);
+            break;
+          } catch (err) {
+            console.error(`[Migration] Failed to migrate ${candidate}:`, err.message);
+          }
+        }
+      }
+    }
+
+    if (!fs.existsSync(newSavePath)) {
+      const saveCandidates = [];
+      const app = getApp();
+      if (app && typeof app.getPath === 'function') {
+        try {
+          const appData = app.getPath('appData');
+          saveCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config-macos.json'));
+          saveCandidates.push(path.join(appData, 'pet', 'config-macos.json'));
+          saveCandidates.push(path.join(appData, 'qq-pet-macos', 'config-macos.json'));
+          saveCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config-macos.json'));
+        } catch (_) {}
+      }
+      saveCandidates.push(path.join(os.homedir(), '.qqpet_userdata', 'config-macos.json'));
+      saveCandidates.push(path.join(process.cwd(), 'config-macos.json'));
+
+      for (const candidate of saveCandidates) {
+        if (fs.existsSync(candidate) && candidate !== newSavePath) {
+          try {
+            fs.copyFileSync(candidate, newSavePath);
+            cloudSync.logSync(`[Migration] Migrated save file from ${candidate}`);
+            break;
+          } catch (err) {
+            console.error(`[Migration] Failed to migrate ${candidate}:`, err.message);
+          }
+        }
+      }
+    }
   },
 
   /**

@@ -14,16 +14,23 @@ process.on("uncaughtException", (err) => {
 
 const { app, ipcMain } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const cloudSync = require("./src/cloudSync");
 const { createSetupWindow } = require("./src/setupWindow");
 const { createSettingsWindow } = require("./src/settingsWindow");
 
-// 便携版路径处理：打包后重定向 userData 到 .exe 所在目录下的 userdata 文件夹
-if (app.isPackaged) {
-  const exeDir = path.dirname(process.execPath);
-  const customUserData = path.join(exeDir, "userdata");
-  app.setPath("userData", customUserData);
+// 便携版路径处理：统一重定向 userData 到 baseDir 下的 userdata 文件夹
+const baseDir = cloudSync.getBaseDir();
+const customUserData = path.join(baseDir, "userdata");
+if (!fs.existsSync(customUserData)) {
+  try {
+    fs.mkdirSync(customUserData, { recursive: true });
+  } catch (_) {}
 }
+app.setPath("userData", customUserData);
+
+// 迁移兼容：自动检测并迁移旧位置（如 %APPDATA% 或旧目录）的数据
+cloudSync.migrateOldData();
 
 const gotTheLock = app.requestSingleInstanceLock();
 

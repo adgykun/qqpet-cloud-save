@@ -31,7 +31,8 @@
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
-    "jest": "^30.5.2"
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2"
   },
   "build": {
     "publish": null,
