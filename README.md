@@ -1,6 +1,7 @@
 # QQ 宠物管家 (WorkBuddy) - 云存档版
 
-QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同步项目（macOS / Windows / Linux），附带 OpenClaw Skill 实现宠物自动管理。
+QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同步项目（Windows），附带 OpenClaw Skill 实现宠物自动管理。
+（本项目基于qqpet_automation开发，增加了云端实时存档功能）
 
 > **核心理念：GitHub 是唯一的"真相"，本地电脑只是"缓存"。**
 > 用户不需要从旧电脑带走任何数据文件，只需要在任意新电脑上下载应用并输入 GitHub Token，程序就能自动找到云端 Gist 存档并恢复宠物。
