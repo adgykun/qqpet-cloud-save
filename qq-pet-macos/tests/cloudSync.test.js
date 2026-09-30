@@ -28,19 +28,23 @@ describe('CloudSync Module Tests', () => {
     } catch (_) {}
   });
 
-  describe('Portable Base Dir & Path Helpers', () => {
-    test('getBaseDir should respect process.env.PORTABLE_EXECUTABLE_DIR if set', () => {
+  describe('Base Dir & Path Helpers & Writability Fuse', () => {
+    test('getBaseDir should respect process.env.PORTABLE_EXECUTABLE_DIR if set and writable', () => {
       const originalEnv = process.env.PORTABLE_EXECUTABLE_DIR;
-      process.env.PORTABLE_EXECUTABLE_DIR = '/mock/portable/dir';
+      const tmpPortable = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_portable_dir_'));
+      process.env.PORTABLE_EXECUTABLE_DIR = tmpPortable;
 
       const baseDir = cloudSync.getBaseDir();
-      expect(baseDir).toBe('/mock/portable/dir');
+      expect(baseDir).toBe(tmpPortable);
 
       if (originalEnv !== undefined) {
         process.env.PORTABLE_EXECUTABLE_DIR = originalEnv;
       } else {
         delete process.env.PORTABLE_EXECUTABLE_DIR;
       }
+      try {
+        fs.rmSync(tmpPortable, { recursive: true, force: true });
+      } catch (_) {}
     });
 
     test('getBaseDir should fallback to dirname of process.execPath when env is unset', () => {
@@ -54,6 +58,23 @@ describe('CloudSync Module Tests', () => {
         process.env.PORTABLE_EXECUTABLE_DIR = originalEnv;
       }
     });
+
+    test('should trigger fuse and fallback to AppData when install dir is not writable', () => {
+      cloudSync.getUserDataPath.mockRestore();
+      cloudSync.getConfigPath.mockRestore();
+
+      const unwritableDir = '/unwritable_test_dir_path_12345';
+      jest.spyOn(cloudSync, 'getInstallDir').mockReturnValue(unwritableDir);
+
+      const fallbackUserData = cloudSync.getUserDataPath();
+      expect(fallbackUserData).not.toBe(path.join(unwritableDir, 'userdata'));
+      expect(fallbackUserData).toBeTruthy();
+
+      const logFile = path.join(fallbackUserData, 'sync_log.txt');
+      expect(fs.existsSync(logFile)).toBe(true);
+      const logContent = fs.readFileSync(logFile, 'utf-8');
+      expect(logContent).toContain('[Fuse]');
+    });
   });
 
   describe('migrateOldData', () => {
@@ -61,10 +82,10 @@ describe('CloudSync Module Tests', () => {
       cloudSync.getUserDataPath.mockRestore();
       cloudSync.getConfigPath.mockRestore();
 
-      const mockBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_portable_base_'));
+      const mockBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_install_base_'));
       const oldLocationDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_old_loc_'));
 
-      jest.spyOn(cloudSync, 'getBaseDir').mockReturnValue(mockBaseDir);
+      jest.spyOn(cloudSync, 'getInstallDir').mockReturnValue(mockBaseDir);
 
       const oldConfig = path.join(oldLocationDir, 'config.json');
       const oldSave = path.join(oldLocationDir, 'config-macos.json');
@@ -72,7 +93,6 @@ describe('CloudSync Module Tests', () => {
       fs.writeFileSync(oldConfig, JSON.stringify({ cloudSync: { githubToken: 'old_migrated_token' } }));
       fs.writeFileSync(oldSave, JSON.stringify({ pet: { info: { name: '旧版企鹅' } } }));
 
-      // Mock cwd or candidates if needed
       const originalCwd = process.cwd;
       process.cwd = () => oldLocationDir;
 

@@ -24,12 +24,13 @@ QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同�
 
 ### 1. 启动宠物与云端恢复
 
-从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载Windows平台的安装包：
+从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载 Windows 平台的 Setup 安装包（`QQ宠物云存档版-Setup-x64.exe`）：
 
-#### 恢复与同步三步走：
-1. 双击运行 `QQ宠物云存档版.exe`。
-2. 首次运行时弹出的配置窗口中输入你的 **GitHub Personal Access Token**。
-3. 点击 **「连接并恢复存档」**，程序会自动在云端搜索并下载恢复你的宠物！
+#### 安装与启动步骤：
+1. 下载 Setup 安装包并双击进行安装（**建议选择非系统保护目录，如 D 盘**）。
+2. 从桌面快捷方式启动游戏。
+3. 首次运行时弹出的配置窗口中输入你的 **GitHub Personal Access Token** 并保持勾选"在此电脑上记住配置"。
+4. 点击 **「连接并恢复存档」**，程序会自动在云端搜索并下载恢复你的宠物！此后启动将直接进入游戏，不再弹窗。
 
 ### 2. 如何获取 GitHub Token
 
@@ -52,11 +53,12 @@ GitHub Token 是访问你个人云端存档的"授权密钥"，获取非常简�
 
 ## 云端存档与配置文件
 
-### 配置文件 `config.json`
+### 数据与配置文件
 
-配置文件路径：
-- 打包便携版：与 `.exe` 同级的根目录或 `userdata` 目录。
-- 开发运行：项目根目录下的 `config.json`（可参考 `config.example.json` 模板）。
+数据与配置目录位于安装目录同级：
+- `config.json`：存放云同步配置（位于安装目录 `installDir/config.json`）。
+- `userdata/`：存放本地存档（`config-macos.json`）、自动备份（`backup/`）、日志（`sync_log.txt`）以及未同步标记（`pending_sync.flag`）。
+- 若安装目录不可写（如安装在 Program Files），自动触发保险丝回退至 `%APPDATA%`。
 
 结构说明：
 
