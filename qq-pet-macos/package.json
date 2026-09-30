@@ -67,18 +67,29 @@
       ]
     },
     "win": {
-      "icon": "resources/icon.png",
+      "icon": "resources/icon.ico",
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ]
     },
-    "portable": {
-      "artifactName": "QQ宠物云存档版.exe"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "QQ宠物云存档版",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "uninstallDisplayName": "QQ宠物云存档版",
+      "artifactName": "QQ宠物云存档版-Setup-x64.${ext}",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
     "linux": {
       "icon": "resources/icon.png",

@@ -18,34 +18,79 @@ function getApp() {
   return null;
 }
 
+function isDirWritable(dirPath) {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    const testFile = path.join(dirPath, `.write_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`);
+    fs.writeFileSync(testFile, 'test', 'utf-8');
+    fs.unlinkSync(testFile);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 const cloudSync = {
   /**
-   * 获取便携版基础路径 (PORTABLE_EXECUTABLE_DIR 或 process.execPath 所在目录)
+   * 获取安装目录 (process.env.PORTABLE_EXECUTABLE_DIR 或 process.execPath 所在目录)
    */
-  getBaseDir() {
+  getInstallDir() {
     return process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
   },
 
   /**
-   * 获取 userData 路径 (统一放在 baseDir/userdata 下)
+   * 获取基础安装目录
    */
-  getUserDataPath() {
-    const app = getApp();
-    if (app && typeof app.getPath === 'function') {
-      try {
-        return app.getPath('userData');
-      } catch (_) {}
-    }
-    const baseDir = cloudSync.getBaseDir();
-    return path.join(baseDir, 'userdata');
+  getBaseDir() {
+    return cloudSync.getInstallDir();
   },
 
   /**
-   * 获取配置文件路径 config.json (位于 baseDir/config.json)
+   * 获取 userData 路径 (若安装目录可写则为 installDir/userdata，否则回退到 AppData / 用户目录)
+   */
+  getUserDataPath() {
+    const installDir = cloudSync.getInstallDir();
+    if (isDirWritable(installDir)) {
+      return path.join(installDir, 'userdata');
+    }
+
+    // 保险丝回退路径（当安装目录不可写时）
+    let fallbackDir = null;
+    const app = getApp();
+    if (app && typeof app.getPath === 'function') {
+      try {
+        fallbackDir = app.getPath('userData');
+      } catch (_) {}
+    }
+    if (!fallbackDir) {
+      fallbackDir = path.join(os.homedir(), '.qqpet_userdata');
+    }
+
+    // 记录回退日志
+    try {
+      if (!fs.existsSync(fallbackDir)) {
+        fs.mkdirSync(fallbackDir, { recursive: true });
+      }
+      const logFile = path.join(fallbackDir, 'sync_log.txt');
+      const line = `[${new Date().toISOString()}] [Fuse] Installation directory ${installDir} is not writable. Falling back to data directory: ${fallbackDir}\n`;
+      fs.appendFileSync(logFile, line, 'utf-8');
+    } catch (_) {}
+
+    return fallbackDir;
+  },
+
+  /**
+   * 获取配置文件路径 config.json (若安装目录可写为 installDir/config.json，否则放在 fallback 目录下)
    */
   getConfigPath() {
-    const baseDir = cloudSync.getBaseDir();
-    return path.join(baseDir, 'config.json');
+    const installDir = cloudSync.getInstallDir();
+    if (isDirWritable(installDir)) {
+      return path.join(installDir, 'config.json');
+    }
+    const userDataPath = cloudSync.getUserDataPath();
+    return path.join(userDataPath, 'config.json');
   },
 
   /**
@@ -67,7 +112,6 @@ const cloudSync = {
    * 自动迁移兼容旧位置 (如 %APPDATA% 或旧目录) 的 config.json 及存档文件
    */
   migrateOldData() {
-    const baseDir = cloudSync.getBaseDir();
     const newConfigPath = cloudSync.getConfigPath();
     const newUserDataPath = cloudSync.getUserDataPath();
     const newSavePath = path.join(newUserDataPath, 'config-macos.json');
@@ -90,6 +134,8 @@ const cloudSync = {
           configCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config.json'));
         } catch (_) {}
       }
+      const installDir = cloudSync.getInstallDir();
+      configCandidates.push(path.join(installDir, 'userdata', 'config.json'));
       configCandidates.push(path.join(process.cwd(), 'config.json'));
       configCandidates.push(path.join(__dirname, '..', 'config.json'));
       configCandidates.push(path.join(__dirname, 'config.json'));
@@ -119,6 +165,8 @@ const cloudSync = {
           saveCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config-macos.json'));
         } catch (_) {}
       }
+      const installDir = cloudSync.getInstallDir();
+      saveCandidates.push(path.join(installDir, 'config-macos.json'));
       saveCandidates.push(path.join(os.homedir(), '.qqpet_userdata', 'config-macos.json'));
       saveCandidates.push(path.join(process.cwd(), 'config-macos.json'));
 

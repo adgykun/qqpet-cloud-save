@@ -19,18 +19,6 @@ const cloudSync = require("./src/cloudSync");
 const { createSetupWindow } = require("./src/setupWindow");
 const { createSettingsWindow } = require("./src/settingsWindow");
 
-// 便携版路径处理：统一重定向 userData 到 baseDir 下的 userdata 文件夹
-const baseDir = cloudSync.getBaseDir();
-const customUserData = path.join(baseDir, "userdata");
-if (!fs.existsSync(customUserData)) {
-  try {
-    fs.mkdirSync(customUserData, { recursive: true });
-  } catch (_) {}
-}
-app.setPath("userData", customUserData);
-
-// 迁移兼容：自动检测并迁移旧位置（如 %APPDATA% 或旧目录）的数据
-cloudSync.migrateOldData();
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -85,10 +73,6 @@ const createWindow = async () => {
 };
 
 // 注册 IPC 处理器
-ipcMain.handle("manual-sync", async () => {
-  return await cloudSync.uploadSave();
-});
-
 ipcMain.handle("get-sync-status", async () => {
   const config = cloudSync.readConfig();
   const userDataPath = cloudSync.getUserDataPath();
@@ -153,14 +137,22 @@ app.commandLine.appendSwitch("disable-site-isolation-trials");
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 app.whenReady().then(() => {
+  // 数据与配置目录及迁移设置：app ready 最早期重定向 userData 并迁移数据
+  cloudSync.migrateOldData();
+  const userDataPath = cloudSync.getUserDataPath();
+  app.setPath("userData", userDataPath);
+
   const config = cloudSync.readConfig();
   const token = config.cloudSync?.githubToken;
+  const enabled = config.cloudSync?.enabled !== false;
 
-  if (token) {
+  if (token && enabled) {
     createWindow();
     cloudSync.initSync().catch((err) => {
       console.error("后台同步初始化失败:", err.message);
     });
+  } else if (token && !enabled) {
+    createWindow();
   } else {
     createSetupWindow((res) => {
       createWindow();
