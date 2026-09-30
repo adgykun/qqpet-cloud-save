@@ -1,237 +1,52 @@
-name: Build & Release
+name: Build and Release QQPet Cloud Save
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build-macos:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        arch: [arm64]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Download resources
-        run: |
-          cd qq-pet-macos
-          gh release download resources-v1 \
-            --pattern 'qq-pet-resources.tar.gz' \
-            --dir /tmp
-          tar xzf /tmp/qq-pet-resources.tar.gz
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: |
-          cd qq-pet-macos
-          npm install
-
-      - name: Resolve version from tag
-        id: ver
-        run: |
-          REF="${GITHUB_REF_NAME:-}"
-          if [[ "$REF" == v* ]]; then
-            echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=$(node -p "require('./qq-pet-macos/package.json').version")" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build macOS (${{ matrix.arch }})
-        run: |
-          cd qq-pet-macos
-          npx electron-builder --mac dmg zip --${{ matrix.arch }} \
-            -c.extraMetadata.version=${{ steps.ver.outputs.version }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qq-pet-macos-${{ matrix.arch }}
-          path: |
-            qq-pet-macos/dist/*.dmg
-            qq-pet-macos/dist/*.zip
-          if-no-files-found: error
-
-  build-windows:
+  build:
+    name: Build Windows Executable & Release
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Download resources
-        run: |
-          cd qq-pet-macos
-          gh release download resources-v1 `
-            --pattern 'qq-pet-resources.tar.gz' `
-            --dir $env:TEMP
-          tar xzf "$env:TEMP\qq-pet-resources.tar.gz"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           cd qq-pet-macos
           npm install
 
-      - name: Resolve version from tag
-        id: ver
-        shell: bash
-        run: |
-          REF="${GITHUB_REF_NAME:-}"
-          if [[ "$REF" == v* ]]; then
-            echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=$(node -p "require('./qq-pet-macos/package.json').version")" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build Windows (x64)
-        shell: bash
+      - name: Run Tests
         run: |
           cd qq-pet-macos
-          npx electron-builder --win nsis portable --x64 -c.extraMetadata.version=${{ steps.ver.outputs.version }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm test
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qq-pet-windows-x64
-          path: |
-            qq-pet-macos/dist/*.exe
-            !qq-pet-macos/dist/*__uninstaller*
-          if-no-files-found: error
-
-  build-linux:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: ubuntu-latest
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install AppImage build deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libarchive-tools fuse libfuse2 desktop-file-utils
-
-      - name: Download resources
+      - name: Build Portable Executable
         run: |
           cd qq-pet-macos
-          gh release download resources-v1 \
-            --pattern 'qq-pet-resources.tar.gz' \
-            --dir /tmp
-          tar xzf /tmp/qq-pet-resources.tar.gz
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm run build
 
-      - name: Install dependencies
-        run: |
-          cd qq-pet-macos
-          npm install
-
-      - name: Resolve version from tag
-        id: ver
-        run: |
-          REF="${GITHUB_REF_NAME:-}"
-          if [[ "$REF" == v* ]]; then
-            echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=$(node -p "require('./qq-pet-macos/package.json').version")" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build Linux (${{ matrix.arch }})
-        run: |
-          cd qq-pet-macos
-          npx electron-builder --linux AppImage tar.gz --${{ matrix.arch }} \
-            -c.extraMetadata.version=${{ steps.ver.outputs.version }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USE_SYSTEM_FPM: 'true'
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qq-pet-linux-${{ matrix.arch }}
-          path: |
-            qq-pet-macos/dist/*.AppImage
-            qq-pet-macos/dist/*.tar.gz
-          if-no-files-found: error
-
-  release:
-    needs: [build-macos, build-windows, build-linux]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: List artifacts
-        run: find artifacts -type f | head -20
-
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: QQ宠物 ${{ github.ref_name }}
-          body: |
-            ## QQ宠物桌面版（干净版）
-
-            已移除遥测、设备指纹采集，使用 Ruffle WASM 替代 Flash。
-
-            ### macOS 安装（Apple Silicon M1/M2/M3/M4）
-            1. 下载 `.dmg` 文件
-            2. 双击打开，将 `QQ宠物.app` 拖入 `Applications`
-            3. 如提示"已损坏"，在终端执行：
-               ```
-               sudo xattr -rd com.apple.quarantine /Applications/QQ宠物.app
-               ```
-
-            ### Windows 安装
-            - **安装版**：下载 `QQ宠物 Setup x.x.x.exe`，双击安装
-            - **便携版**：下载 `QQ宠物-x.x.x-portable.exe`，直接运行，无需安装
-
-            ### Linux 安装（x86_64 / arm64）
-            - **AppImage**（推荐）：下载 `qq-pet-x.x.x-<arch>.AppImage`，`chmod +x` 后双击或命令行运行
-            - **tar.gz**：下载 `qq-pet-x.x.x-<arch>.tar.gz`，解压后执行目录内 `qq-pet` 二进制
-            - 部分发行版需要 `libfuse2`（AppImage 依赖）：`sudo apt install libfuse2`
-
-            > ⚠️ 应用未签名，macOS / Windows 可能弹出安全提示，请手动允许运行。
-          files: artifacts/**/*
+          tag_name: v1.0.${{ github.run_number }}
+          name: QQ宠物云存档版 v1.0.${{ github.run_number }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            qq-pet-macos/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
