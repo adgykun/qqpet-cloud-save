@@ -24,12 +24,12 @@ QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同�
 
 ### 1. 启动宠物与云端恢复
 
-从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载Windows平台的安装包：
+从 [Releases](https://github.com/adgykun/qqpet-cloud-save/releases) 下载 Windows 平台的安装包：
 
 #### 恢复与同步三步走：
-1. 双击运行 `QQ宠物云存档版.exe`。
-2. 首次运行时弹出的配置窗口中输入你的 **GitHub Personal Access Token**。
-3. 点击 **「连接并恢复存档」**，程序会自动在云端搜索并下载恢复你的宠物！
+1. 下载 Setup 安装包 `QQ宠物云存档版-Setup-x64.exe` 并双击完成安装。
+2. 双击桌面快捷方式 **「QQ宠物云存档版」** 启动游戏。
+3. 首次运行时弹出的配置窗口中输入你的 **GitHub Personal Access Token**，点击 **「连接并恢复存档」**，程序会自动在云端搜索并下载恢复你的宠物！
 
 ### 2. 如何获取 GitHub Token
 
@@ -55,8 +55,8 @@ GitHub Token 是访问你个人云端存档的"授权密钥"，获取非常简�
 ### 配置文件 `config.json`
 
 配置文件路径：
-- 打包便携版：与 `.exe` 同级的根目录或 `userdata` 目录。
-- 开发运行：项目根目录下的 `config.json`（可参考 `config.example.json` 模板）。
+- 安装版：`%APPDATA%/QQ宠物云存档版/config.json`（完全独立持久保存）。
+- 开发运行：`%APPDATA%/QQ宠物云存档版/config.json` 或项目根目录下的 `config.json`。
 
 结构说明：
 

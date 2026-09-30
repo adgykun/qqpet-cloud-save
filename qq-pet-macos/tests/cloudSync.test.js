@@ -28,43 +28,23 @@ describe('CloudSync Module Tests', () => {
     } catch (_) {}
   });
 
-  describe('Portable Base Dir & Path Helpers', () => {
-    test('getBaseDir should respect process.env.PORTABLE_EXECUTABLE_DIR if set', () => {
-      const originalEnv = process.env.PORTABLE_EXECUTABLE_DIR;
-      process.env.PORTABLE_EXECUTABLE_DIR = '/mock/portable/dir';
-
-      const baseDir = cloudSync.getBaseDir();
-      expect(baseDir).toBe('/mock/portable/dir');
-
-      if (originalEnv !== undefined) {
-        process.env.PORTABLE_EXECUTABLE_DIR = originalEnv;
-      } else {
-        delete process.env.PORTABLE_EXECUTABLE_DIR;
-      }
-    });
-
-    test('getBaseDir should fallback to dirname of process.execPath when env is unset', () => {
-      const originalEnv = process.env.PORTABLE_EXECUTABLE_DIR;
-      delete process.env.PORTABLE_EXECUTABLE_DIR;
-
-      const baseDir = cloudSync.getBaseDir();
-      expect(baseDir).toBe(path.dirname(process.execPath));
-
-      if (originalEnv !== undefined) {
-        process.env.PORTABLE_EXECUTABLE_DIR = originalEnv;
-      }
+  describe('UserData & Config Path Helpers', () => {
+    test('getConfigPath should return path inside getUserDataPath', () => {
+      const configPath = cloudSync.getConfigPath();
+      expect(configPath).toBe(path.join(tmpUserDataDir, 'config.json'));
     });
   });
 
   describe('migrateOldData', () => {
-    test('should migrate legacy config.json and config-macos.json to new locations', () => {
+    test('should migrate legacy config.json and config-macos.json to new userData location', () => {
       cloudSync.getUserDataPath.mockRestore();
       cloudSync.getConfigPath.mockRestore();
 
-      const mockBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_portable_base_'));
+      const newUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_new_userdata_'));
       const oldLocationDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qqpet_old_loc_'));
 
-      jest.spyOn(cloudSync, 'getBaseDir').mockReturnValue(mockBaseDir);
+      jest.spyOn(cloudSync, 'getUserDataPath').mockReturnValue(newUserDataDir);
+      jest.spyOn(cloudSync, 'getConfigPath').mockReturnValue(path.join(newUserDataDir, 'config.json'));
 
       const oldConfig = path.join(oldLocationDir, 'config.json');
       const oldSave = path.join(oldLocationDir, 'config-macos.json');
@@ -72,7 +52,6 @@ describe('CloudSync Module Tests', () => {
       fs.writeFileSync(oldConfig, JSON.stringify({ cloudSync: { githubToken: 'old_migrated_token' } }));
       fs.writeFileSync(oldSave, JSON.stringify({ pet: { info: { name: '旧版企鹅' } } }));
 
-      // Mock cwd or candidates if needed
       const originalCwd = process.cwd;
       process.cwd = () => oldLocationDir;
 
@@ -80,8 +59,8 @@ describe('CloudSync Module Tests', () => {
 
       process.cwd = originalCwd;
 
-      const newConfigPath = path.join(mockBaseDir, 'config.json');
-      const newSavePath = path.join(mockBaseDir, 'userdata', 'config-macos.json');
+      const newConfigPath = path.join(newUserDataDir, 'config.json');
+      const newSavePath = path.join(newUserDataDir, 'config-macos.json');
 
       expect(fs.existsSync(newConfigPath)).toBe(true);
       expect(fs.existsSync(newSavePath)).toBe(true);
@@ -90,7 +69,7 @@ describe('CloudSync Module Tests', () => {
       expect(migratedConfig.cloudSync.githubToken).toBe('old_migrated_token');
 
       try {
-        fs.rmSync(mockBaseDir, { recursive: true, force: true });
+        fs.rmSync(newUserDataDir, { recursive: true, force: true });
         fs.rmSync(oldLocationDir, { recursive: true, force: true });
       } catch (_) {}
     });

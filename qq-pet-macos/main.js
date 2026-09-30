@@ -19,17 +19,7 @@ const cloudSync = require("./src/cloudSync");
 const { createSetupWindow } = require("./src/setupWindow");
 const { createSettingsWindow } = require("./src/settingsWindow");
 
-// 便携版路径处理：统一重定向 userData 到 baseDir 下的 userdata 文件夹
-const baseDir = cloudSync.getBaseDir();
-const customUserData = path.join(baseDir, "userdata");
-if (!fs.existsSync(customUserData)) {
-  try {
-    fs.mkdirSync(customUserData, { recursive: true });
-  } catch (_) {}
-}
-app.setPath("userData", customUserData);
-
-// 迁移兼容：自动检测并迁移旧位置（如 %APPDATA% 或旧目录）的数据
+// 迁移兼容：启动时检测旧位置的数据，自动迁移到标准的 %APPDATA% 目录
 cloudSync.migrateOldData();
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -153,10 +143,12 @@ app.commandLine.appendSwitch("disable-site-isolation-trials");
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 app.whenReady().then(() => {
+  cloudSync.migrateOldData();
   const config = cloudSync.readConfig();
   const token = config.cloudSync?.githubToken;
+  const enabled = config.cloudSync?.enabled !== false;
 
-  if (token) {
+  if (token && enabled) {
     createWindow();
     cloudSync.initSync().catch((err) => {
       console.error("后台同步初始化失败:", err.message);

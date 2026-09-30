@@ -20,14 +20,7 @@ function getApp() {
 
 const cloudSync = {
   /**
-   * 获取便携版基础路径 (PORTABLE_EXECUTABLE_DIR 或 process.execPath 所在目录)
-   */
-  getBaseDir() {
-    return process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
-  },
-
-  /**
-   * 获取 userData 路径 (统一放在 baseDir/userdata 下)
+   * 获取 userData 路径 (默认使用 Electron 稳定的 app.getPath('userData'))
    */
   getUserDataPath() {
     const app = getApp();
@@ -36,16 +29,22 @@ const cloudSync = {
         return app.getPath('userData');
       } catch (_) {}
     }
-    const baseDir = cloudSync.getBaseDir();
-    return path.join(baseDir, 'userdata');
+    return path.join(os.homedir(), '.qqpet_userdata');
   },
 
   /**
-   * 获取配置文件路径 config.json (位于 baseDir/config.json)
+   * 获取配置文件路径 config.json (位于 app.getPath('userData')/config.json)
    */
   getConfigPath() {
-    const baseDir = cloudSync.getBaseDir();
-    return path.join(baseDir, 'config.json');
+    const userDataPath = cloudSync.getUserDataPath();
+    return path.join(userDataPath, 'config.json');
+  },
+
+  /**
+   * 获取基础数据目录
+   */
+  getBaseDir() {
+    return cloudSync.getUserDataPath();
   },
 
   /**
@@ -64,12 +63,11 @@ const cloudSync = {
   },
 
   /**
-   * 自动迁移兼容旧位置 (如 %APPDATA% 或旧目录) 的 config.json 及存档文件
+   * 自动迁移兼容旧位置 (便携版临时目录、exe 同级目录、旧重定向目录等) 的 config.json 及存档文件
    */
   migrateOldData() {
-    const baseDir = cloudSync.getBaseDir();
-    const newConfigPath = cloudSync.getConfigPath();
     const newUserDataPath = cloudSync.getUserDataPath();
+    const newConfigPath = cloudSync.getConfigPath();
     const newSavePath = path.join(newUserDataPath, 'config-macos.json');
 
     if (!fs.existsSync(newUserDataPath)) {
@@ -78,8 +76,17 @@ const cloudSync = {
       } catch (_) {}
     }
 
+    const portableDir = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath);
+
     if (!fs.existsSync(newConfigPath)) {
-      const configCandidates = [];
+      const configCandidates = [
+        path.join(portableDir, 'config.json'),
+        path.join(portableDir, 'userdata', 'config.json'),
+        path.join(process.cwd(), 'config.json'),
+        path.join(__dirname, '..', 'config.json'),
+        path.join(__dirname, 'config.json')
+      ];
+
       const app = getApp();
       if (app && typeof app.getPath === 'function') {
         try {
@@ -87,12 +94,8 @@ const cloudSync = {
           configCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config.json'));
           configCandidates.push(path.join(appData, 'pet', 'config.json'));
           configCandidates.push(path.join(appData, 'qq-pet-macos', 'config.json'));
-          configCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config.json'));
         } catch (_) {}
       }
-      configCandidates.push(path.join(process.cwd(), 'config.json'));
-      configCandidates.push(path.join(__dirname, '..', 'config.json'));
-      configCandidates.push(path.join(__dirname, 'config.json'));
 
       for (const candidate of configCandidates) {
         if (fs.existsSync(candidate) && candidate !== newConfigPath) {
@@ -108,7 +111,13 @@ const cloudSync = {
     }
 
     if (!fs.existsSync(newSavePath)) {
-      const saveCandidates = [];
+      const saveCandidates = [
+        path.join(portableDir, 'userdata', 'config-macos.json'),
+        path.join(portableDir, 'config-macos.json'),
+        path.join(os.homedir(), '.qqpet_userdata', 'config-macos.json'),
+        path.join(process.cwd(), 'config-macos.json')
+      ];
+
       const app = getApp();
       if (app && typeof app.getPath === 'function') {
         try {
@@ -116,11 +125,8 @@ const cloudSync = {
           saveCandidates.push(path.join(appData, 'qqpet_cloudsave', 'config-macos.json'));
           saveCandidates.push(path.join(appData, 'pet', 'config-macos.json'));
           saveCandidates.push(path.join(appData, 'qq-pet-macos', 'config-macos.json'));
-          saveCandidates.push(path.join(appData, 'QQ宠物云存档版', 'config-macos.json'));
         } catch (_) {}
       }
-      saveCandidates.push(path.join(os.homedir(), '.qqpet_userdata', 'config-macos.json'));
-      saveCandidates.push(path.join(process.cwd(), 'config-macos.json'));
 
       for (const candidate of saveCandidates) {
         if (fs.existsSync(candidate) && candidate !== newSavePath) {

@@ -112,8 +112,6 @@ function createSettingsWindow(onStatusChange) {
       .btn-primary:hover { background-color: #1565c0; }
       .btn-secondary { background-color: #e0e0e0; color: #333; }
       .btn-secondary:hover { background-color: #d5d5d5; }
-      .btn-sync { background-color: #2e7d32; color: white; }
-      .btn-sync:hover { background-color: #1b5e20; }
       button:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
   </head>
@@ -142,7 +140,6 @@ function createSettingsWindow(onStatusChange) {
       <div id="statusMsg" class="status-msg"></div>
 
       <div class="btn-group">
-        <button id="syncNowBtn" class="btn-sync">立即同步</button>
         <button id="saveBtn" class="btn-primary">保存设置</button>
         <button id="cancelBtn" class="btn-secondary">取消</button>
       </div>
@@ -158,7 +155,6 @@ function createSettingsWindow(onStatusChange) {
       const tokenInput = document.getElementById('tokenInput');
       const intervalInput = document.getElementById('intervalInput');
       const statusMsg = document.getElementById('statusMsg');
-      const syncNowBtn = document.getElementById('syncNowBtn');
       const saveBtn = document.getElementById('saveBtn');
       const cancelBtn = document.getElementById('cancelBtn');
 
@@ -175,25 +171,6 @@ function createSettingsWindow(onStatusChange) {
 
       ipcRenderer.on('settings-info', (event, data) => {
         updateUI(data);
-      });
-
-      syncNowBtn.addEventListener('click', () => {
-        statusMsg.className = 'status-msg info';
-        statusMsg.innerText = '⏳ 正在同步...';
-        syncNowBtn.disabled = true;
-        ipcRenderer.send('settings-sync-now');
-      });
-
-      ipcRenderer.on('settings-sync-result', (event, res) => {
-        syncNowBtn.disabled = false;
-        if (res.success) {
-          statusMsg.className = 'status-msg success';
-          statusMsg.innerText = '✅ 同步成功！';
-          ipcRenderer.send('settings-get-info');
-        } else {
-          statusMsg.className = 'status-msg error';
-          statusMsg.innerText = '❌ 同步失败：' + (res.error || res.reason || '网络错误');
-        }
       });
 
       saveBtn.addEventListener('click', () => {
@@ -270,16 +247,6 @@ function createSettingsWindow(onStatusChange) {
     }
   };
 
-  const handleSyncNow = async () => {
-    const res = await cloudSync.uploadSave();
-    if (settingsWindow && !settingsWindow.isDestroyed()) {
-      settingsWindow.webContents.send('settings-sync-result', res);
-    }
-    if (typeof onStatusChange === 'function') {
-      onStatusChange(res.success ? 'synced' : 'error');
-    }
-  };
-
   const handleSave = async (event, data) => {
     const { token, interval } = data;
     if (token) {
@@ -314,12 +281,10 @@ function createSettingsWindow(onStatusChange) {
 
   function cleanupIPCs() {
     ipcMain.removeListener('settings-get-info', handleGetInfo);
-    ipcMain.removeListener('settings-sync-now', handleSyncNow);
     ipcMain.removeListener('settings-save', handleSave);
   }
 
   ipcMain.on('settings-get-info', handleGetInfo);
-  ipcMain.on('settings-sync-now', handleSyncNow);
   ipcMain.on('settings-save', handleSave);
 
   settingsWindow.on('closed', () => {

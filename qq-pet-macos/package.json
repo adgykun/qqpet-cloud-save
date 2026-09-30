@@ -70,15 +70,21 @@
       "icon": "resources/icon.png",
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ]
     },
-    "portable": {
-      "artifactName": "QQ宠物云存档版.exe"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "QQ宠物云存档版",
+      "artifactName": "QQ宠物云存档版-Setup-x64.${ext}"
     },
     "linux": {
       "icon": "resources/icon.png",

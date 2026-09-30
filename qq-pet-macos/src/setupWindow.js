@@ -13,7 +13,7 @@ function createSetupWindow(onComplete) {
   setupWindow = new BrowserWindow({
     width: 500,
     height: 420,
-    title: '🐧 QQ 宠物云存档版 - 首次配置',
+    title: 'QQ 宠物云存档版 - 首次配置',
     resizable: false,
     center: true,
     autoHideMenuBar: true,
@@ -28,7 +28,7 @@ function createSetupWindow(onComplete) {
   <html>
   <head>
     <meta charset="UTF-8">
-    <title>🐧 QQ 宠物云存档版 - 首次配置</title>
+    <title>QQ 宠物云存档版 - 首次配置</title>
     <style>
       body {
         font-family: "Segoe UI", Microsoft YaHei, sans-serif;
@@ -135,7 +135,7 @@ function createSetupWindow(onComplete) {
   </head>
   <body>
     <div class="container">
-      <h2>🐧 QQ 宠物云存档版 - 首次配置</h2>
+      <h2>QQ 宠物云存档版 - 首次配置</h2>
 
       <p style="font-size: 13px; margin-top: 0;">
         欢迎回来！请输入你的 GitHub Token 来恢复你的宠物存档。

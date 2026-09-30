@@ -33,7 +33,7 @@ jobs:
           cd qq-pet-macos
           npm test
 
-      - name: Build Portable Executable
+      - name: Build NSIS Installer
         run: |
           cd qq-pet-macos
           npm run build
