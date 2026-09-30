@@ -1,0 +1,10 @@
+{
+  "cloudSync": {
+    "enabled": true,
+    "githubToken": "",
+    "gistId": "",
+    "intervalMinutes": 5,
+    "lastSyncTime": "",
+    "lastSyncDevice": ""
+  }
+}

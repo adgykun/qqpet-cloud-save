@@ -20,6 +20,15 @@ Thumbs.db
 # pytest
 .pytest_cache/
 
+# QQ宠物配置文件与本地数据（安全隐私，绝不提交）
+config.json
+qq-pet-macos/config.json
+config-*.json
+pending_sync.flag
+device_id.txt
+userdata/
+release/
+
 # QQ宠物原始安装包和Electron运行时（太大，不提交）
 *.exe
 qq_pet_app/
