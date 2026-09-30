@@ -24,14 +24,7 @@ QQ 宠物（怀旧服 v1.2.4）的逆向分析、桌面移植与云端存档同�
 
 ### 1. 启动宠物与云端恢复
 
-从 [Releases](https://github.com/xuemian168/qqpet_automation/releases) 下载对应平台的安装包：
-
-| 平台 | 文件 | 说明 |
-|------|------|------|
-| Windows (便携版) | `QQ宠物云存档版.exe` | 免安装便携版（推荐） |
-| Windows (64位) | `QQ宠物 Setup x.x.x.exe` | NSIS 安装程序 |
-| macOS (Apple Silicon) | `QQ宠物-x.x.x-arm64.dmg` | DMG 安装包 |
-| Linux (x86_64) | `qq-pet-x.x.x-x86_64.AppImage` / `qq-pet-x.x.x-x64.tar.gz` | AppImage 或 tar.gz |
+从 [Releases](https://github.com/xuemian168/qqpet_automation/releases) 下载Windows平台的安装包：
 
 #### 恢复与同步三步走：
 1. 双击运行 `QQ宠物云存档版.exe`。
