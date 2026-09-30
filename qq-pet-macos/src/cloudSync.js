@@ -18,21 +18,24 @@ function getApp() {
   return null;
 }
 
-function isDirWritable(dirPath) {
-  try {
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-    const testFile = path.join(dirPath, `.write_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`);
-    fs.writeFileSync(testFile, 'test', 'utf-8');
-    fs.unlinkSync(testFile);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
 const cloudSync = {
+  /**
+   * 检查目录是否可写
+   */
+  isDirWritable(dirPath) {
+    try {
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+      const testFile = path.join(dirPath, `.write_test_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`);
+      fs.writeFileSync(testFile, 'test', 'utf-8');
+      fs.unlinkSync(testFile);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  },
+
   /**
    * 获取安装目录 (process.env.PORTABLE_EXECUTABLE_DIR 或 process.execPath 所在目录)
    */
@@ -52,7 +55,7 @@ const cloudSync = {
    */
   getUserDataPath() {
     const installDir = cloudSync.getInstallDir();
-    if (isDirWritable(installDir)) {
+    if (cloudSync.isDirWritable(installDir)) {
       return path.join(installDir, 'userdata');
     }
 
@@ -86,7 +89,7 @@ const cloudSync = {
    */
   getConfigPath() {
     const installDir = cloudSync.getInstallDir();
-    if (isDirWritable(installDir)) {
+    if (cloudSync.isDirWritable(installDir)) {
       return path.join(installDir, 'config.json');
     }
     const userDataPath = cloudSync.getUserDataPath();

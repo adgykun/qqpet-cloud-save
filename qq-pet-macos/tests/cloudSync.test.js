@@ -65,6 +65,10 @@ describe('CloudSync Module Tests', () => {
 
       const unwritableDir = '/unwritable_test_dir_path_12345';
       jest.spyOn(cloudSync, 'getInstallDir').mockReturnValue(unwritableDir);
+      jest.spyOn(cloudSync, 'isDirWritable').mockImplementation((dirPath) => {
+        if (dirPath === unwritableDir) return false;
+        return true;
+      });
 
       const fallbackUserData = cloudSync.getUserDataPath();
       expect(fallbackUserData).not.toBe(path.join(unwritableDir, 'userdata'));
