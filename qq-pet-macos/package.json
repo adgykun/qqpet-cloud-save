@@ -1,7 +1,7 @@
 {
-  "name": "qq-pet-macos",
+  "name": "qq-pet",
   "version": "1.6.1",
-  "description": "QQ宠物 云存档版 - 已移除遥测和设备指纹采集",
+  "description": "QQ宠物 - 已移除遥测和设备指纹采集",
   "license": "SEE LICENSE IN ../LICENSE",
   "main": "main.js",
   "scripts": {
@@ -37,7 +37,7 @@
   "build": {
     "publish": null,
     "appId": "com.qqpet.cloudsave",
-    "productName": "QQ宠物云存档版",
+    "productName": "QQ宠物",
     "asar": true,
     "directories": {
       "output": "release"
@@ -83,11 +83,10 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "QQ宠物云存档版",
+      "shortcutName": "QQ宠物",
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
-      "uninstallDisplayName": "QQ宠物云存档版",
-      "artifactName": "QQ宠物云存档版-Setup-x64.${ext}",
+      "artifactName": "QQ宠物-Setup-x64.${ext}",
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
