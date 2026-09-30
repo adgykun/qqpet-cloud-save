@@ -445,3 +445,20 @@ img {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
+
+/* Ruffle logo, splash screen, and overlay layers */
+ruffle-player #splash-screen,
+ruffle-player #unmute-overlay,
+ruffle-player .logo,
+ruffle-player #message-overlay,
+ruffle-player .loadbar,
+#splash-screen,
+#unmute-overlay,
+.logo,
+#message-overlay,
+.loadbar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

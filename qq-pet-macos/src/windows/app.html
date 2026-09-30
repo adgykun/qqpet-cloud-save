@@ -37,11 +37,29 @@
         ruffle-player {
             pointer-events: none !important;
         }
+        ruffle-player #splash-screen,
+        ruffle-player #unmute-overlay,
+        ruffle-player .logo,
+        ruffle-player #message-overlay,
+        ruffle-player .loadbar,
+        #splash-screen,
+        #unmute-overlay,
+        .logo,
+        #message-overlay,
+        .loadbar {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
     </style>
     <script>
         window.RufflePlayer = window.RufflePlayer || {};
         window.RufflePlayer.config = {
             autoplay: "on",
+            splashScreen: false,
+            showSplashScreen: false,
+            preloader: false,
             unmuteOverlay: "hidden",
             warnOnUnsupportedContent: false,
             polyfills: true,
@@ -50,6 +68,49 @@
         };
     </script>
     <script src="./js/ruffle/ruffle.js"></script>
+    <script>
+        (function() {
+            const hideOverlayStyle = `
+                #splash-screen,
+                #unmute-overlay,
+                .logo,
+                #message-overlay,
+                .loadbar,
+                #outer-loadbar,
+                .loadbar-inner {
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                    pointer-events: none !important;
+                }
+            `;
+            function applyStyleToShadow(player) {
+                if (player && player.shadowRoot && !player.shadowRoot.querySelector('#ruffle-overlay-hide-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'ruffle-overlay-hide-style';
+                    style.textContent = hideOverlayStyle;
+                    player.shadowRoot.appendChild(style);
+                }
+            }
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === 1) {
+                            if (node.tagName && node.tagName.toLowerCase() === 'ruffle-player') {
+                                applyStyleToShadow(node);
+                            }
+                            const players = node.querySelectorAll ? node.querySelectorAll('ruffle-player') : [];
+                            players.forEach(applyStyleToShadow);
+                        }
+                    }
+                }
+            });
+            document.addEventListener('DOMContentLoaded', () => {
+                observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+                document.querySelectorAll('ruffle-player').forEach(applyStyleToShadow);
+            });
+        })();
+    </script>
 </head>
 
 <body>
